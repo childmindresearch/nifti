@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools", "numpy"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nifti"
+version = "0.0.1"
+dependencies = [
+    "numpy",
+]

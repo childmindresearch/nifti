@@ -66,7 +66,7 @@ static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
         "intent_name", PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, &nih->intent_name, 4, NPY_ARRAY_CARRAY, NULL),        /* 'name' or meaning of data. */
         "magic", PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, &nih->magic, 4, NPY_ARRAY_CARRAY, NULL)                     /* MUST be "ni1" or "n+1". */
     );
-    return re; // PyArray_New(&PyArray_Type, 1, (npy_intp[]){ 1 }, NPY_STRING, NULL, &nih->magic, 4, NPY_ARRAY_CARRAY, NULL);//re;
+    return re;
 }
 
 static int nifti1_type_to_npy(int t_datatype)
@@ -131,7 +131,7 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
 
     npy_intp dims[7] = {nim->dim[7], nim->dim[6], nim->dim[5], nim->dim[4], nim->dim[3], nim->dim[2], nim->dim[1]};
 
-    PyObject *arr = PyArray_SimpleNew(nim->ndim, dims + 7 - nim->ndim, nifti1_type_to_npy(nim->datatype));
+    PyObject *arr = PyArray_New(&PyArray_Type, nim->ndim, dims + 7 - nim->ndim, nifti1_type_to_npy(nim->datatype), NULL, NULL, 0, 1, NULL);
 
     nim->data = PyArray_DATA(arr);
 

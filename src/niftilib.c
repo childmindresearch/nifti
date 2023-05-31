@@ -5,19 +5,8 @@
 
 #include "nifti1_io.h"
 
-static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
+static PyObject *nifti_header_to_pydict(const nifti_1_header *nih)
 {
-    char *param_filename = NULL;
-
-    if (!PyArg_ParseTuple(args, "s", &param_filename))
-        return NULL;
-
-    nifti_1_header *nih = nifti_read_header(param_filename, NULL, 0);
-    if (nih == NULL)
-    {
-        return NULL;
-    }
-
     PyObject *h_sizeof_hdr = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);       /* MUST be 348 */
     PyObject *h_data_type = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, NULL, 10, NPY_ARRAY_CARRAY, NULL);      /* ++UNUSED++ */
     PyObject *h_db_name = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, NULL, 18, NPY_ARRAY_CARRAY, NULL);        /* ++UNUSED++ */
@@ -106,8 +95,6 @@ static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
     memcpy(PyArray_DATA(h_intent_name), &nih->intent_name, sizeof(nih->intent_name));
     memcpy(PyArray_DATA(h_magic), &nih->magic, sizeof(nih->magic));
 
-    free(nih);
-
     PyObject *re = Py_BuildValue(
         "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O}",
         "sizeof_hdr", h_sizeof_hdr,
@@ -153,6 +140,26 @@ static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
         "srow_z", h_srow_z,
         "intent_name", h_intent_name,
         "magic", h_magic);
+    return re;
+}
+
+static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
+{
+    char *param_filename = NULL;
+
+    if (!PyArg_ParseTuple(args, "s", &param_filename))
+        return NULL;
+
+    nifti_1_header *nih = nifti_read_header(param_filename, NULL, 0);
+    if (nih == NULL)
+    {
+        return NULL;
+    }
+
+    PyObject *re = nifti_header_to_pydict(nih);
+
+    free(nih);
+    
     return re;
 }
 

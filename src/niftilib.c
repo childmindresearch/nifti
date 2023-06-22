@@ -149,11 +149,14 @@ static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
     char *param_filename = NULL;
 
     if (!PyArg_ParseTuple(args, "s", &param_filename))
+    {
         return NULL;
+    }
 
     nifti_1_header *nih = nifti_read_header(param_filename, NULL, 0);
     if (nih == NULL)
     {
+        PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
         return NULL;
     }
 
@@ -216,11 +219,14 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
     char *param_filename = NULL;
 
     if (!PyArg_ParseTuple(args, "s", &param_filename))
+    {
         return NULL;
+    }
 
     nifti_image *nim = nifti_image_read(param_filename, 0);
     if (nim == NULL)
     {
+        PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
         return NULL;
     }
 
@@ -234,6 +240,7 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
     {
         nim->data = NULL;
         nifti_image_free(nim);
+        PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
         return NULL;
     };
 

@@ -6,13 +6,14 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
-  set(CMAKE_C_FLAGS "-pedantic -Wall -Wextra")
+  set(CMAKE_C_FLAGS "-pedantic -Wall -Wextra -Wno-unused-parameter -Wno-incompatible-pointer-types")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
 set(CMAKE_C_FLAGS_DEBUG "-g")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -march=native")
 
 add_subdirectory(src/zlib)
+include_directories(${zlib_SOURCE_DIR})
 
 # Grab the variables from a local Python installation
 # NumPy headers
@@ -32,11 +33,8 @@ target_include_directories(${SKBUILD_PROJECT_NAME} PUBLIC
                            ${NumPy_INCLUDE_DIRS}
                            ${PYTHON_INCLUDE_DIRS})
 
-target_compile_options(${SKBUILD_PROJECT_NAME} PRIVATE -Wno-incompatible-pointer-types)
-
 add_compile_definitions(HAVE_ZLIB)
 
 target_link_libraries(${SKBUILD_PROJECT_NAME} PRIVATE zlib)
-
 
 install(TARGETS ${SKBUILD_PROJECT_NAME} DESTINATION .)

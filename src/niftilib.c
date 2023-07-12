@@ -187,8 +187,10 @@ static int nifti1_type_to_npy(int t_datatype)
         return NPY_COMPLEX64;
     case DT_FLOAT64:
         return NPY_FLOAT64;
+#ifdef NPY_UINT24
     case DT_RGB24:
-        return NPY_UINT8; // todo
+        return NPY_UINT24; // todo
+#endif
     case DT_ALL:
         return NPY_VOID;
     case DT_INT8:
@@ -201,12 +203,18 @@ static int nifti1_type_to_npy(int t_datatype)
         return NPY_INT64;
     case DT_UINT64:
         return NPY_UINT64;
+#ifdef NPY_FLOAT128 // Not available on windows with MSVC
     case DT_FLOAT128:
         return NPY_FLOAT128;
+#endif
+#ifdef NPY_COMPLEX128
     case DT_COMPLEX128:
         return NPY_COMPLEX128;
+#endif
+#ifdef NPY_COMPLEX256 // Not available on windows with MSVC
     case DT_COMPLEX256:
         return NPY_COMPLEX256;
+#endif
     case DT_RGBA32:
         return NPY_UINT32; // todo
     default:

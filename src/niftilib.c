@@ -4,9 +4,11 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
-#include "nifti1_io.h"
+#include <zlib.h>
 
-static PyObject *nifti_header_to_pydict(const nifti_1_header *nih)
+#include "cnifti.h"
+
+static PyObject *nifti_header_to_pydict(const cnifti_n1_header_t *nih)
 {
     PyObject *h_sizeof_hdr = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);       /* MUST be 348 */
     PyObject *h_data_type = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, NULL, 10, NPY_ARRAY_CARRAY, NULL);      /* ++UNUSED++ */
@@ -144,6 +146,49 @@ static PyObject *nifti_header_to_pydict(const nifti_1_header *nih)
     return re;
 }
 
+static int read_nifti_header(gzFile file_handle, cnifti_header_t *buf)
+{
+    if (gzread(file_handle, buf, sizeof(cnifti_n1_header_t)) < 0)
+    {
+        int err;
+        printf("Error: Could not read nifti1 header %i '%s'\n", err, gzerror(file_handle, &err));
+        return 0;
+    }
+
+    int32_t peek = cnifti_peek(*((uint32_t *)buf));
+
+    if (peek == -1)
+    {
+        printf("Error: Not a valid nifti file\n");
+        return 0;
+    }
+    if (peek & CNIFTI_PEEK_NIFTI2)
+    {
+        // Read the rest of the header
+        if (gzread(file_handle, ((uint8_t *)buf) + sizeof(cnifti_n1_header_t), sizeof(cnifti_n2_header_t) - sizeof(cnifti_n1_header_t)) < 0)
+        {
+            printf("Error: Could not read nifti2 header\n");
+            return 0;
+        }
+        cnifti_n2_header_t *header = &buf->n2_header;
+        if (peek & CNIFTI_PEEK_SWAP)
+        {
+            cnifti_n2_header_swap(header);
+        }
+        return 2;
+    }
+    else
+    {
+        cnifti_n1_header_t *header = &buf->n1_header;
+        if (peek & CNIFTI_PEEK_SWAP)
+        {
+            cnifti_n1_header_swap(header);
+        }
+        return 1;
+    }
+    return 0;
+}
+
 static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
 {
     char *param_filename = NULL;
@@ -153,17 +198,28 @@ static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
         return NULL;
     }
 
-    nifti_1_header *nih = nifti_read_header(param_filename, NULL, 0);
-    if (nih == NULL)
+    gzFile file_handle = gzopen(param_filename, "rb");
+
+    if (file_handle == Z_NULL)
     {
+        int err;
+        printf("Error opening file %i: '%s'\n", errno, strerror(errno));
+        PyErr_SetString(PyExc_IOError, "Error opening file.");
+        return NULL;
+    }
+
+    cnifti_header_t nih;
+
+    if (read_nifti_header(file_handle, &nih) != 1)
+    {
+        gzclose(file_handle);
         PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
         return NULL;
     }
 
-    PyObject *re = nifti_header_to_pydict(nih);
-
-    free(nih);
+    gzclose(file_handle);
     
+    PyObject *re = nifti_header_to_pydict(&nih.n1_header);
     return re;
 }
 
@@ -171,51 +227,48 @@ static int nifti1_type_to_npy(int t_datatype)
 {
     switch (t_datatype)
     {
-    case DT_NONE:
+    case CNIFTI_DT_UNKNOWN:
+    case CNIFTI_DT_BINARY:
         return NPY_VOID;
-    case DT_BINARY:
-        return NPY_VOID;
-    case DT_UINT8:
+    case CNIFTI_DT_UINT8:
         return NPY_UINT8;
-    case DT_INT16:
+    case CNIFTI_DT_INT16:
         return NPY_INT16;
-    case DT_INT32:
+    case CNIFTI_DT_INT32:
         return NPY_INT32;
-    case DT_FLOAT32:
+    case CNIFTI_DT_FLOAT32:
         return NPY_FLOAT32;
-    case DT_COMPLEX64:
+    case CNIFTI_DT_COMPLEX64:
         return NPY_COMPLEX64;
-    case DT_FLOAT64:
+    case CNIFTI_DT_FLOAT64:
         return NPY_FLOAT64;
 #ifdef NPY_UINT24
     case DT_RGB24:
         return NPY_UINT24; // todo
 #endif
-    case DT_ALL:
-        return NPY_VOID;
-    case DT_INT8:
+    case CNIFTI_DT_INT8:
         return NPY_INT8;
-    case DT_UINT16:
+    case CNIFTI_DT_UINT16:
         return NPY_UINT16;
-    case DT_UINT32:
+    case CNIFTI_DT_UINT32:
         return NPY_UINT32;
-    case DT_INT64:
+    case CNIFTI_DT_INT64:
         return NPY_INT64;
-    case DT_UINT64:
+    case CNIFTI_DT_UINT64:
         return NPY_UINT64;
 #ifdef NPY_FLOAT128 // Not available on windows with MSVC
-    case DT_FLOAT128:
+    case CNIFTI_DT_FLOAT128:
         return NPY_FLOAT128;
 #endif
 #ifdef NPY_COMPLEX128
-    case DT_COMPLEX128:
+    case CNIFTI_DT_COMPLEX128:
         return NPY_COMPLEX128;
 #endif
 #ifdef NPY_COMPLEX256 // Not available on windows with MSVC
-    case DT_COMPLEX256:
+    case CNIFTI_DT_COMPLEX256:
         return NPY_COMPLEX256;
 #endif
-    case DT_RGBA32:
+    case CNIFTI_DT_RGBA32:
         return NPY_UINT32; // todo
     default:
         return NPY_VOID;
@@ -231,31 +284,56 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
         return NULL;
     }
 
-    nifti_image *nim = nifti_image_read(param_filename, 0);
-    if (nim == NULL)
+    gzFile file_handle = gzopen(param_filename, "rb");
+
+    if (file_handle == Z_NULL)
     {
+        int err;
+        printf("Error opening file %i: '%s'\n", errno, strerror(errno));
+        PyErr_SetString(PyExc_IOError, "Error opening file.");
+        return NULL;
+    }
+
+    cnifti_header_t nih;
+
+    if (read_nifti_header(file_handle, &nih) != 1)
+    {
+        gzclose(file_handle);
         PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
         return NULL;
     }
 
-    npy_intp dims[7] = {nim->dim[7], nim->dim[6], nim->dim[5], nim->dim[4], nim->dim[3], nim->dim[2], nim->dim[1]};
+    const cnifti_n1_header_t *header = &nih.n1_header;
 
-    PyObject *arr = PyArray_New(&PyArray_Type, nim->ndim, dims + 7 - nim->ndim, nifti1_type_to_npy(nim->datatype), NULL, NULL, 0, 1, NULL);
+    const npy_intp dims[7] = {header->dim[7], header->dim[6], header->dim[5], header->dim[4], header->dim[3], header->dim[2], header->dim[1]};
 
-    nim->data = PyArray_DATA(arr);
+    const int16_t ndim = header->dim[0];
 
-    if (nifti_image_load(nim) != 0)
+    PyObject *arr = PyArray_New(&PyArray_Type, ndim, dims + 7 - ndim, nifti1_type_to_npy(header->datatype), NULL, NULL, 0, 1, NULL);
+
+    cnifti_extension_indicator_t ext_indicator;
+    if (gzread(file_handle, &ext_indicator, sizeof(cnifti_extension_indicator_t)) < 0)
     {
-        nim->data = NULL;
-        nifti_image_free(nim);
-        PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error: Could not read header extension\n");
         return NULL;
-    };
+    }
 
-    nim->data = NULL;
+    if (ext_indicator.has_extension)
+    {
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error: todo\n");
+        return NULL;
+    }
 
-    nifti_image_free(nim);
+    if (gzread(file_handle, PyArray_DATA(arr), cnifti_n1_header_array_size(header)) < 0)
+    {
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error: Could not read data\n");
+        return NULL;
+    }
 
+    gzclose(file_handle);
     return arr;
 }
 

@@ -9,8 +9,10 @@ if(CMAKE_COMPILER_IS_GNUCXX)
   set(CMAKE_C_FLAGS "-pedantic -Wall -Wextra -Wno-unused-parameter -Wno-incompatible-pointer-types")
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
-set(CMAKE_C_FLAGS_DEBUG "-g")
-set(CMAKE_C_FLAGS_RELEASE "-O3 -march=native")
+if(NOT MSVC)
+  set(CMAKE_C_FLAGS_DEBUG "-g")
+  set(CMAKE_C_FLAGS_RELEASE "-O3 -march=native")
+endif(NOT MSVC)
 
 add_subdirectory(src/zlib)
 include_directories(${zlib_SOURCE_DIR})

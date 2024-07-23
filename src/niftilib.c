@@ -8,7 +8,7 @@
 
 #include "cnifti.h"
 
-static PyObject *nifti_header_to_pydict(const cnifti_n1_header_t *nih)
+static PyObject *n1_header_to_raw_pydict(const cnifti_n1_header_t *nih)
 {
     PyObject *h_sizeof_hdr = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);       /* MUST be 348 */
     PyObject *h_data_type = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, NULL, 10, NPY_ARRAY_CARRAY, NULL);      /* ++UNUSED++ */
@@ -146,6 +146,241 @@ static PyObject *nifti_header_to_pydict(const cnifti_n1_header_t *nih)
     return re;
 }
 
+// static PyObject *n2_header_to_raw_pydict(const cnifti_n2_header_t *nih)
+// {
+//     PyObject *h_sizeof_hdr = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);       /* MUST be 348 */
+//     PyObject *h_data_type = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, NULL, 10, NPY_ARRAY_CARRAY, NULL);      /* ++UNUSED++ */
+//     PyObject *h_db_name = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_STRING, NULL, NULL, 18, NPY_ARRAY_CARRAY, NULL);        /* ++UNUSED++ */
+//     PyObject *h_extents = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);          /* ++UNUSED++ */
+//     PyObject *h_session_error = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);    /* ++UNUSED++ */
+//     PyObject *h_regular = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT8, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);           /* ++UNUSED++ */
+//     PyObject *h_dim_info = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT8, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);          /* MRI slice ordering. */
+//     PyObject *h_dim = PyArray_New(&PyArray_Type, 1, (npy_intp[]){8}, NPY_INT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);              /* Data array dimensions. */
+//     PyObject *h_intent_p1 = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* 1st intent parameter. */
+//     PyObject *h_intent_p2 = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* 2nd intent parameter. */
+//     PyObject *h_intent_p3 = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* 3rd intent parameter. */
+//     PyObject *h_intent_code = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* NIFTI_INTENT_* code. */
+//     PyObject *h_datatype = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* Defines data type! */
+//     PyObject *h_bitpix = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);           /* Number bits/voxel */
+//     PyObject *h_slice_start = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* First slice index. */
+//     PyObject *h_pixdim = PyArray_New(&PyArray_Type, 1, (npy_intp[]){8}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* Grid spacings. */
+//     PyObject *h_vox_offset = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);     /* Offset into .nii file */
+//     PyObject *h_scl_slope = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* Data scaling: slope. */
+//     PyObject *h_scl_inter = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);      /* Data scaling: offset. */
+//     PyObject *h_slice_end = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);        /* Last slice index. */
+//     PyObject *h_slice_code = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT8, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);        /* Slice timing order. */
+//     PyObject *h_xyzt_units = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_INT8, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);        /* Units of pixdim[1..4] */
+//     PyObject *h_cal_max = PyArray_New(&PyArray_Type, 0, (npy_intp[]){1}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);        /* Max display intensity */
+
+// }
+
+static PyObject *n1_header_to_pydict(const cnifti_n1_header_t *nih)
+{
+    PyObject *h_sizeof_hdr = PyLong_FromLong(nih->sizeof_hdr);
+    PyObject *h_data_type = PyUnicode_FromStringAndSize(nih->data_type, sizeof(nih->data_type));
+    PyObject *h_db_name = PyUnicode_FromStringAndSize(nih->db_name, sizeof(nih->db_name));
+    PyObject *h_extents = PyLong_FromLong(nih->extents);
+    PyObject *h_session_error = PyLong_FromLong(nih->session_error);
+    PyObject *h_regular = PyLong_FromLong(nih->regular);
+    PyObject *h_dim_info = PyLong_FromLong(nih->dim_info);
+    PyObject *h_dim = PyArray_New(&PyArray_Type, 1, (npy_intp[]){8}, NPY_INT16, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);              /* Data array dimensions. */
+    PyObject *h_intent_p1 = PyFloat_FromDouble(nih->intent_p1);
+    PyObject *h_intent_p2 = PyFloat_FromDouble(nih->intent_p2);
+    PyObject *h_intent_p3 = PyFloat_FromDouble(nih->intent_p3);
+    PyObject *h_intent_code = PyLong_FromLong(nih->intent_code);
+    PyObject *h_datatype = PyLong_FromLong(nih->datatype);
+    PyObject *h_bitpix = PyLong_FromLong(nih->bitpix);
+    PyObject *h_slice_start = PyLong_FromLong(nih->slice_start);
+    PyObject *h_pixdim = PyArray_New(&PyArray_Type, 1, (npy_intp[]){8}, NPY_FLOAT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* Grid spacings. */
+    PyObject *h_vox_offset = PyFloat_FromDouble(nih->vox_offset);
+    PyObject *h_scl_slope = PyFloat_FromDouble(nih->scl_slope);
+    PyObject *h_scl_inter = PyFloat_FromDouble(nih->scl_inter);
+    PyObject *h_slice_end = PyLong_FromLong(nih->slice_end);
+    PyObject *h_slice_code = PyLong_FromLong(nih->slice_code);
+    PyObject *h_xyzt_units = PyLong_FromLong(nih->xyzt_units);
+    PyObject *h_cal_max = PyFloat_FromDouble(nih->cal_max);
+    PyObject *h_cal_min = PyFloat_FromDouble(nih->cal_min);
+    PyObject *h_slice_duration = PyFloat_FromDouble(nih->slice_duration);
+    PyObject *h_toffset = PyFloat_FromDouble(nih->toffset);
+    PyObject *h_glmax = PyLong_FromLong(nih->glmax);
+    PyObject *h_glmin = PyLong_FromLong(nih->glmin);
+    PyObject *h_descrip = PyUnicode_FromStringAndSize(nih->descrip, sizeof(nih->descrip));
+    PyObject *h_aux_file = PyUnicode_FromStringAndSize(nih->aux_file, sizeof(nih->aux_file));
+    PyObject *h_qform_code = PyLong_FromLong(nih->qform_code);
+    PyObject *h_sform_code = PyLong_FromLong(nih->sform_code);
+    PyObject *h_quatern_b = PyFloat_FromDouble(nih->quatern_b);
+    PyObject *h_quatern_c = PyFloat_FromDouble(nih->quatern_c);
+    PyObject *h_quatern_d = PyFloat_FromDouble(nih->quatern_d);
+    PyObject *h_qoffset_x = PyFloat_FromDouble(nih->qoffset_x);
+    PyObject *h_qoffset_y = PyFloat_FromDouble(nih->qoffset_y);
+    PyObject *h_qoffset_z = PyFloat_FromDouble(nih->qoffset_z);
+    PyObject *h_srow_x = PyArray_New(&PyArray_Type, 1, (npy_intp[]){4}, NPY_FLOAT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* 1st row affine transform. */
+    PyObject *h_srow_y = PyArray_New(&PyArray_Type, 1, (npy_intp[]){4}, NPY_FLOAT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* 2nd row affine transform. */
+    PyObject *h_srow_z = PyArray_New(&PyArray_Type, 1, (npy_intp[]){4}, NPY_FLOAT32, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* 3rd row affine transform. */
+    PyObject *h_intent_name = PyUnicode_FromStringAndSize(nih->intent_name, sizeof(nih->intent_name));
+    PyObject *h_magic = PyUnicode_FromStringAndSize(nih->magic, sizeof(nih->magic));
+
+    memcpy(PyArray_DATA(h_dim), &nih->dim, sizeof(nih->dim));
+    memcpy(PyArray_DATA(h_pixdim), &nih->pixdim, sizeof(nih->pixdim));
+    memcpy(PyArray_DATA(h_srow_x), &nih->srow_x, sizeof(nih->srow_x));
+    memcpy(PyArray_DATA(h_srow_y), &nih->srow_y, sizeof(nih->srow_y));
+    memcpy(PyArray_DATA(h_srow_z), &nih->srow_z, sizeof(nih->srow_z));
+
+    PyObject *re = Py_BuildValue(
+        "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O}",
+        "sizeof_hdr", h_sizeof_hdr,
+        "data_type", h_data_type,
+        "db_name", h_db_name,
+        "extents", h_extents,
+        "session_error", h_session_error,
+        "regular", h_regular,
+        "dim_info", h_dim_info,
+        "dim", h_dim,
+        "intent_p1", h_intent_p1,
+        "intent_p2", h_intent_p2,
+        "intent_p3", h_intent_p3,
+        "intent_code", h_intent_code,
+        "datatype", h_datatype,
+        "bitpix", h_bitpix,
+        "slice_start", h_slice_start,
+        "pixdim", h_pixdim,
+        "vox_offset", h_vox_offset,
+        "scl_slope", h_scl_slope,
+        "scl_inter", h_scl_inter,
+        "slice_end", h_slice_end,
+        "slice_code", h_slice_code,
+        "xyzt_units", h_xyzt_units,
+        "cal_max", h_cal_max,
+        "cal_min", h_cal_min,
+        "slice_duration", h_slice_duration,
+        "toffset", h_toffset,
+        "glmax", h_glmax,
+        "glmin", h_glmin,
+        "descrip", h_descrip,
+        "aux_file", h_aux_file,
+        "qform_code", h_qform_code,
+        "sform_code", h_sform_code,
+        "quatern_b", h_quatern_b,
+        "quatern_c", h_quatern_c,
+        "quatern_d", h_quatern_d,
+        "qoffset_x", h_qoffset_x,
+        "qoffset_y", h_qoffset_y,
+        "qoffset_z", h_qoffset_z,
+        "srow_x", h_srow_x,
+        "srow_y", h_srow_y,
+        "srow_z", h_srow_z,
+        "intent_name", h_intent_name,
+        "magic", h_magic);
+    return re;
+}
+
+static PyObject *n2_header_to_pydict(const cnifti_n1_header_t *nih)
+{
+    PyObject *h_sizeof_hdr = PyLong_FromLong(nih->sizeof_hdr);
+    PyObject *h_data_type = PyUnicode_FromStringAndSize(nih->data_type, sizeof(nih->data_type));
+    PyObject *h_db_name = PyUnicode_FromStringAndSize(nih->db_name, sizeof(nih->db_name));
+    PyObject *h_extents = PyLong_FromLong(nih->extents);
+    PyObject *h_session_error = PyLong_FromLong(nih->session_error);
+    PyObject *h_regular = PyLong_FromLong(nih->regular);
+    PyObject *h_dim_info = PyLong_FromLong(nih->dim_info);
+    PyObject *h_dim = PyArray_New(&PyArray_Type, 1, (npy_intp[]){8}, NPY_INT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);              /* Data array dimensions. */
+    PyObject *h_intent_p1 = PyFloat_FromDouble(nih->intent_p1);
+    PyObject *h_intent_p2 = PyFloat_FromDouble(nih->intent_p2);
+    PyObject *h_intent_p3 = PyFloat_FromDouble(nih->intent_p3);
+    PyObject *h_intent_code = PyLong_FromLong(nih->intent_code);
+    PyObject *h_datatype = PyLong_FromLong(nih->datatype);
+    PyObject *h_bitpix = PyLong_FromLong(nih->bitpix);
+    PyObject *h_slice_start = PyLong_FromLong(nih->slice_start);
+    PyObject *h_pixdim = PyArray_New(&PyArray_Type, 1, (npy_intp[]){8}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* Grid spacings. */
+    PyObject *h_vox_offset = PyFloat_FromDouble(nih->vox_offset);
+    PyObject *h_scl_slope = PyFloat_FromDouble(nih->scl_slope);
+    PyObject *h_scl_inter = PyFloat_FromDouble(nih->scl_inter);
+    PyObject *h_slice_end = PyLong_FromLong(nih->slice_end);
+    PyObject *h_slice_code = PyLong_FromLong(nih->slice_code);
+    PyObject *h_xyzt_units = PyLong_FromLong(nih->xyzt_units);
+    PyObject *h_cal_max = PyFloat_FromDouble(nih->cal_max);
+    PyObject *h_cal_min = PyFloat_FromDouble(nih->cal_min);
+    PyObject *h_slice_duration = PyFloat_FromDouble(nih->slice_duration);
+    PyObject *h_toffset = PyFloat_FromDouble(nih->toffset);
+    PyObject *h_glmax = PyLong_FromLong(nih->glmax);
+    PyObject *h_glmin = PyLong_FromLong(nih->glmin);
+    PyObject *h_descrip = PyUnicode_FromStringAndSize(nih->descrip, sizeof(nih->descrip));
+    PyObject *h_aux_file = PyUnicode_FromStringAndSize(nih->aux_file, sizeof(nih->aux_file));
+    PyObject *h_qform_code = PyLong_FromLong(nih->qform_code);
+    PyObject *h_sform_code = PyLong_FromLong(nih->sform_code);
+    PyObject *h_quatern_b = PyFloat_FromDouble(nih->quatern_b);
+    PyObject *h_quatern_c = PyFloat_FromDouble(nih->quatern_c);
+    PyObject *h_quatern_d = PyFloat_FromDouble(nih->quatern_d);
+    PyObject *h_qoffset_x = PyFloat_FromDouble(nih->qoffset_x);
+    PyObject *h_qoffset_y = PyFloat_FromDouble(nih->qoffset_y);
+    PyObject *h_qoffset_z = PyFloat_FromDouble(nih->qoffset_z);
+    PyObject *h_srow_x = PyArray_New(&PyArray_Type, 1, (npy_intp[]){4}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* 1st row affine transform. */
+    PyObject *h_srow_y = PyArray_New(&PyArray_Type, 1, (npy_intp[]){4}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* 2nd row affine transform. */
+    PyObject *h_srow_z = PyArray_New(&PyArray_Type, 1, (npy_intp[]){4}, NPY_FLOAT64, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);         /* 3rd row affine transform. */
+    PyObject *h_intent_name = PyUnicode_FromStringAndSize(nih->intent_name, sizeof(nih->intent_name));
+    PyObject *h_magic = PyUnicode_FromStringAndSize(nih->magic, sizeof(nih->magic));
+
+    memcpy(PyArray_DATA(h_dim), &nih->dim, sizeof(nih->dim));
+    memcpy(PyArray_DATA(h_pixdim), &nih->pixdim, sizeof(nih->pixdim));
+    memcpy(PyArray_DATA(h_srow_x), &nih->srow_x, sizeof(nih->srow_x));
+    memcpy(PyArray_DATA(h_srow_y), &nih->srow_y, sizeof(nih->srow_y));
+    memcpy(PyArray_DATA(h_srow_z), &nih->srow_z, sizeof(nih->srow_z));
+
+    PyObject *re = Py_BuildValue(
+        "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O}",
+        "sizeof_hdr", h_sizeof_hdr,
+        "data_type", h_data_type,
+        "db_name", h_db_name,
+        "extents", h_extents,
+        "session_error", h_session_error,
+        "regular", h_regular,
+        "dim_info", h_dim_info,
+        "dim", h_dim,
+        "intent_p1", h_intent_p1,
+        "intent_p2", h_intent_p2,
+        "intent_p3", h_intent_p3,
+        "intent_code", h_intent_code,
+        "datatype", h_datatype,
+        "bitpix", h_bitpix,
+        "slice_start", h_slice_start,
+        "pixdim", h_pixdim,
+        "vox_offset", h_vox_offset,
+        "scl_slope", h_scl_slope,
+        "scl_inter", h_scl_inter,
+        "slice_end", h_slice_end,
+        "slice_code", h_slice_code,
+        "xyzt_units", h_xyzt_units,
+        "cal_max", h_cal_max,
+        "cal_min", h_cal_min,
+        "slice_duration", h_slice_duration,
+        "toffset", h_toffset,
+        "glmax", h_glmax,
+        "glmin", h_glmin,
+        "descrip", h_descrip,
+        "aux_file", h_aux_file,
+        "qform_code", h_qform_code,
+        "sform_code", h_sform_code,
+        "quatern_b", h_quatern_b,
+        "quatern_c", h_quatern_c,
+        "quatern_d", h_quatern_d,
+        "qoffset_x", h_qoffset_x,
+        "qoffset_y", h_qoffset_y,
+        "qoffset_z", h_qoffset_z,
+        "srow_x", h_srow_x,
+        "srow_y", h_srow_y,
+        "srow_z", h_srow_z,
+        "intent_name", h_intent_name,
+        "magic", h_magic);
+
+    return re;
+}
+
 static int read_nifti_header(gzFile file_handle, cnifti_header_t *buf)
 {
     if (gzread(file_handle, buf, sizeof(cnifti_n1_header_t)) < 0)
@@ -219,7 +454,7 @@ static PyObject *niftilib_read_header_c(const PyObject *self, PyObject *args)
 
     gzclose(file_handle);
     
-    PyObject *re = nifti_header_to_pydict(&nih.n1_header);
+    PyObject *re = n1_header_to_raw_pydict(&nih.n1_header);
     return re;
 }
 
@@ -305,11 +540,11 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
 
     const cnifti_n1_header_t *header = &nih.n1_header;
 
-    const npy_intp dims[7] = {header->dim[7], header->dim[6], header->dim[5], header->dim[4], header->dim[3], header->dim[2], header->dim[1]};
+    const npy_intp dims[7] = {header->dim[1], header->dim[2], header->dim[3], header->dim[4], header->dim[5], header->dim[6], header->dim[7]};
 
     const int16_t ndim = header->dim[0];
 
-    PyObject *arr = PyArray_New(&PyArray_Type, ndim, dims + 7 - ndim, nifti1_type_to_npy(header->datatype), NULL, NULL, 0, 1, NULL);
+    PyObject *arr = PyArray_New(&PyArray_Type, ndim, dims, nifti1_type_to_npy(header->datatype), NULL, NULL, 0, 1, NULL);
 
     cnifti_extension_indicator_t ext_indicator;
     if (gzread(file_handle, &ext_indicator, sizeof(cnifti_extension_indicator_t)) < 0)
@@ -321,9 +556,22 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
 
     if (ext_indicator.has_extension)
     {
-        gzclose(file_handle);
-        PyErr_SetString(PyExc_IOError, "Error: todo\n");
-        return NULL;
+        // Read extension header
+        cnifti_extension_header_t ext_header;
+        if (gzread(file_handle, &ext_header, sizeof(cnifti_extension_header_t)) < 0)
+        {
+            gzclose(file_handle);
+            PyErr_SetString(PyExc_IOError, "Error: Could not read extension header\n");
+            return NULL;
+        }
+
+        // Skip extension data (TODO)
+        if (gzseek(file_handle, ext_header.esize - 8, SEEK_CUR) < 0)
+        {
+            gzclose(file_handle);
+            PyErr_SetString(PyExc_IOError, "Error: Could not skip extension data\n");
+            return NULL;
+        }
     }
 
     if (gzread(file_handle, PyArray_DATA(arr), cnifti_n1_header_array_size(header)) < 0)
@@ -336,6 +584,21 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
     gzclose(file_handle);
     return arr;
 }
+
+/*typedef struct {
+    PyObject_VAR_HEAD
+    PyObject *field1;
+    PyObject *field2;
+} MyDataClassObject;
+
+static PyTypeObject MyDataClassType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "nifti.MyDataClass",
+    .tp_basicsize = sizeof(MyDataClassObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_new = PyType_GenericNew,
+};*/
 
 static PyMethodDef niftilib_methods[] = {
     {
@@ -361,7 +624,18 @@ static struct PyModuleDef niftilib_definition = {
 
 PyMODINIT_FUNC PyInit_nifti(void)
 {
+    PyObject *m;
+    //if (PyType_Ready(&MyDataClassType) < 0)
+    //    return NULL;
+
+    m = PyModule_Create(&niftilib_definition);
+    if (m == NULL)
+        return NULL;
+
+    //Py_INCREF(&MyDataClassType);
+    //PyModule_AddObject(m, "MyDataClass", (PyObject *)&MyDataClassType);
+
     Py_Initialize();
     import_array();
-    return PyModule_Create(&niftilib_definition);
+    return m;
 }

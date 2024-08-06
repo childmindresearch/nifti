@@ -585,6 +585,87 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
     return arr;
 }
 
+static PyObject *niftilib_read_extension_c(const PyObject *self, PyObject *args)
+{
+    char *param_filename = NULL;
+
+    if (!PyArg_ParseTuple(args, "s", &param_filename))
+    {
+        return NULL;
+    }
+
+    gzFile file_handle = gzopen(param_filename, "rb");
+
+    if (file_handle == Z_NULL)
+    {
+        int err;
+        printf("Error opening file %i: '%s'\n", errno, strerror(errno));
+        PyErr_SetString(PyExc_IOError, "Error opening file.");
+        return NULL;
+    }
+
+    cnifti_header_t nih;
+
+    if (read_nifti_header(file_handle, &nih) != 1)
+    {
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error reading NIfTI file.");
+        return NULL;
+    }
+
+    const cnifti_n1_header_t *header = &nih.n1_header;
+
+    cnifti_extension_indicator_t ext_indicator;
+    if (gzread(file_handle, &ext_indicator, sizeof(cnifti_extension_indicator_t)) < 0)
+    {
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error: Could not read header extension\n");
+        return NULL;
+    }
+
+    if (!ext_indicator.has_extension)
+    {
+        PyErr_SetString(PyExc_IOError, "Error: No extension present\n");
+        return NULL;
+    }
+
+    // Read extension header
+    cnifti_extension_header_t ext_header;
+    if (gzread(file_handle, &ext_header, sizeof(cnifti_extension_header_t)) < 0)
+    {
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error: Could not read extension header\n");
+        return NULL;
+    }
+
+    // Read extension data
+    PyObject *ext_data = PyArray_New(&PyArray_Type, 1, (npy_intp[]){ext_header.esize - 8}, NPY_UINT8, NULL, NULL, 0, NPY_ARRAY_CARRAY, NULL);
+    if (gzread(file_handle, PyArray_DATA(ext_data), ext_header.esize - 8) < 0)
+    {
+        gzclose(file_handle);
+        PyErr_SetString(PyExc_IOError, "Error: Could not read extension data\n");
+        return NULL;
+    }
+
+    gzclose(file_handle);
+
+    // create a dictionary with the extension header and data
+    const char *ecode_name = cnifti_ecode_name(ext_header.ecode);
+    PyObject *ecode_name_py;
+    if (ecode_name == NULL) {
+        ecode_name_py = Py_None;
+    } else {
+        ecode_name_py = PyUnicode_FromStringAndSize(ecode_name, strlen(ecode_name));
+    }
+    PyObject *re = Py_BuildValue("{s:O,s:O,s:O,s:O}",
+                                 "esize", PyLong_FromLong(ext_header.esize),
+                                 "ecode", PyLong_FromLong(ext_header.ecode),
+                                 "edata", ext_data,
+                                 "ecode_name", ecode_name_py);
+    
+    return re;
+}
+
 /*typedef struct {
     PyObject_VAR_HEAD
     PyObject *field1;
@@ -612,6 +693,12 @@ static PyMethodDef niftilib_methods[] = {
         niftilib_read_header_c,
         METH_VARARGS,
         "Read nifti header.",
+    },
+    {
+        "read_extension",
+        niftilib_read_extension_c,
+        METH_VARARGS,
+        "Read nifti extension.",
     },
     {NULL, NULL, 0, NULL}};
 

@@ -99,7 +99,11 @@ static PyObject *n1_header_to_raw_pydict(const cnifti_n1_header_t *nih)
     memcpy(PyArray_DATA(h_magic), &nih->magic, sizeof(nih->magic));
 
     PyObject *re = Py_BuildValue(
-        "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O}",
+        "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O}",
         "sizeof_hdr", h_sizeof_hdr,
         "data_type", h_data_type,
         "db_name", h_db_name,
@@ -230,7 +234,8 @@ static PyObject *n1_header_to_pydict(const cnifti_n1_header_t *nih)
         "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
         "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
         "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
-        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O}",
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O}",
         "sizeof_hdr", h_sizeof_hdr,
         "data_type", h_data_type,
         "db_name", h_db_name,
@@ -333,7 +338,8 @@ static PyObject *n2_header_to_pydict(const cnifti_n1_header_t *nih)
         "{s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
         "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
         "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
-        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O}",
+        "s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,s:O,"
+        "s:O,s:O,s:O}",
         "sizeof_hdr", h_sizeof_hdr,
         "data_type", h_data_type,
         "db_name", h_db_name,

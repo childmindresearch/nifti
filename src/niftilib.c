@@ -582,7 +582,11 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
     }
 
     gzclose(file_handle);
-    return arr;
+
+    PyObject *header_dict = n1_header_to_pydict(header);
+
+    PyObject *result = PyTuple_Pack(2, header_dict, arr);
+    return result;
 }
 
 static PyObject *niftilib_read_extension_c(const PyObject *self, PyObject *args)

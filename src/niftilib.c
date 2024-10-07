@@ -592,6 +592,8 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
     PyObject *header_dict = n1_header_to_pydict(header);
 
     PyObject *result = PyTuple_Pack(2, header_dict, arr);
+    Py_DECREF(header_dict);
+    Py_DECREF(arr);
     return result;
 }
 

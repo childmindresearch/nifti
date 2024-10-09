@@ -1585,14 +1585,14 @@ static inline void cnifti_n2_header_swap(cnifti_n2_header_t *t_n2_header) {
   t_n2_header->intent_code = bswap32(t_n2_header->intent_code);
 }
 /** @brief Calculate n1_header data array size (in bytes). */
-static inline int64_t cnifti_n1_header_array_size(const cnifti_n1_header_t *t_n1_header) {
-  int64_t size = t_n1_header->bitpix / 8;
+static inline uint64_t cnifti_n1_header_array_size(const cnifti_n1_header_t *t_n1_header) {
+  uint64_t size = t_n1_header->bitpix / 8;
   for (int i = 0; i < t_n1_header->dim[0]; ++i) { size *= t_n1_header->dim[i+1]; }
   return size;
 }
 /** @brief Calculate n2_header data array size (in bytes). */
-static inline int64_t cnifti_n2_header_array_size(const cnifti_n2_header_t *t_n2_header) {
-  int64_t size = t_n2_header->bitpix / 8;
+static inline uint64_t cnifti_n2_header_array_size(const cnifti_n2_header_t *t_n2_header) {
+  uint64_t size = t_n2_header->bitpix / 8;
   for (int i = 0; i < t_n2_header->dim[0]; ++i) { size *= t_n2_header->dim[i+1]; }
   return size;
 }

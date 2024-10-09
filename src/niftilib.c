@@ -580,11 +580,29 @@ static PyObject *niftilib_read_volume_c(const PyObject *self, PyObject *args)
         }
     }
 
-    if (gzread(file_handle, PyArray_DATA(arr), cnifti_n1_header_array_size(header)) < 0)
-    {
-        gzclose(file_handle);
-        PyErr_SetString(PyExc_IOError, "Error: Could not read data\n");
-        return NULL;
+    uint64_t remaining = cnifti_n1_header_array_size(header);
+    char *data_ptr = (char *)PyArray_DATA(arr);
+    const unsigned int max_chunk_size = INT_MAX;  // gzread returns bytes read as int so this 
+                                                  // is the maximum chunk size we can make it read at a time.
+
+    while (remaining > 0) {
+        unsigned int chunk_size = (remaining > (uint64_t)max_chunk_size) ? max_chunk_size : (unsigned int)remaining;
+        int bytes_read = gzread(file_handle, data_ptr, chunk_size);
+        
+        if (bytes_read < 0) {
+            gzclose(file_handle);
+            PyErr_SetString(PyExc_IOError, "Error: Could not read data\n");
+            return NULL;
+        }
+        
+        if (bytes_read == 0 && remaining > 0) {
+            gzclose(file_handle);
+            PyErr_SetString(PyExc_IOError, "Error: Unexpected end of file\n");
+            return NULL;
+        }
+        
+        remaining -= bytes_read;
+        data_ptr += bytes_read;
     }
 
     gzclose(file_handle);

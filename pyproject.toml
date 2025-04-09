@@ -1,10 +1,9 @@
 [build-system]
-requires = ["scikit-build-core", "numpy"]
+requires = ["scikit-build-core>=0.8", "numpy"]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build]
-minimum-version = "0.2"
-cmake.minimum-version = "3.26.1"
+cmake.version = "<4.0"
 cmake.build-type = "Release"
 # cmake.verbose = true
 
